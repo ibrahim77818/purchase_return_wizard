@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_purchase_return_wizard,purchase.return.wizard,model_purchase_return_wizard,group_purchase_return,1,1,1,1
+access_purchase_return_wizard_line,purchase.return.wizard.line,model_purchase_return_wizard_line,group_purchase_return,1,1,1,1
+access_purchase_return_log_user,purchase.return.log.user,model_purchase_return_log,purchase.group_purchase_user,1,0,0,0
+access_purchase_return_log_returner,purchase.return.log.returner,model_purchase_return_log,group_purchase_return,1,0,1,0
+access_purchase_return_log_line_user,purchase.return.log.line.user,model_purchase_return_log_line,purchase.group_purchase_user,1,0,0,0
+access_purchase_return_log_line_returner,purchase.return.log.line.returner,model_purchase_return_log_line,group_purchase_return,1,0,1,0

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="purchase_order_form_inherit_return_wizard" model="ir.ui.view">
+        <field name="name">purchase.order.form.return.wizard</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_return_wizard" type="object" string="Return / Refund"
+                        groups="purchase_return_wizard.group_purchase_return"
+                        attrs="{'invisible': [('state', 'not in', ('purchase', 'done'))]}"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_return_logs" type="object" class="oe_stat_button"
+                        icon="fa-undo" attrs="{'invisible': [('return_log_count', '=', 0)]}">
+                    <field name="return_log_count" widget="statinfo" string="Returns"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>
