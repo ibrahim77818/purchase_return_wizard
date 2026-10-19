@@ -121,7 +121,7 @@
                                decoration-warning="scenario == 'partially_billed'"
                                decoration-danger="scenario == 'billed'"
                                decoration-muted="scenario == 'not_received'"/>
-                        <field name="action" widget="badge_selection"
+                        <field name="action" widget="selection_badge" width="140px"
                                readonly="qty_returnable &lt;= 0"/>
                         <field name="return_qty"
                                readonly="qty_returnable &lt;= 0"/>

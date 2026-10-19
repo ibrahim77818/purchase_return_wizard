@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Purchase Return & Vendor Credit Wizard",
-    "version": "17.0.1.0.0",
+    "version": "17.0.1.0.1",
     "category": "Inventory/Purchase",
     "summary": "Line-by-line PO returns with automatic return transfers "
                "and draft vendor credit notes for billed quantities",
