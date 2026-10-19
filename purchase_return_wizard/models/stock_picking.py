@@ -102,5 +102,5 @@ class StockPicking(models.Model):
         if self.prw_return_log_count == 1:
             action.update(view_mode="form", res_id=self.prw_return_log_ids.id)
         else:
-            action["view_mode"] = "tree,form"
+            action["view_mode"] = "list,form"
         return action

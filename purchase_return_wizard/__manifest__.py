@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Purchase Return & Vendor Credit Wizard",
-    "version": "16.0.1.2.0",
+    "version": "18.0.1.0.0",
     "category": "Inventory/Purchase",
     "summary": "Line-by-line PO returns with automatic return transfers "
                "and draft vendor credit notes for billed quantities",
@@ -13,10 +13,12 @@ Purchase Return & Vendor Credit Wizard
   ordered / received / returnable thresholds)
 * Keep / Return disposition per line with client + server validation
 * Automatic routing:
-    - received & not billed  -> validated return transfer
-    - received & billed      -> validated return transfer + draft in_refund
-    - partially billed       -> transfer for the full qty, credit note
-                                only for the over-billed portion
+
+  * received and not billed: validated return transfer
+  * received and billed: validated return transfer + draft vendor credit note
+  * partially billed: transfer for the full quantity, credit note only for
+    the over-billed portion
+
 * Immutable traceability log (PRET/xxxx) linking PO, transfers, credit notes
 """,
     "author": "Ibrahim Yahia",

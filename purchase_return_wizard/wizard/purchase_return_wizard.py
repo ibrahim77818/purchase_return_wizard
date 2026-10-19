@@ -158,7 +158,9 @@ class PurchaseReturnWizard(models.TransientModel):
         else:
             po_lines = order.order_line
         po_lines = po_lines.filtered(
-            lambda l: not l.display_type and l.product_id.type in ("product", "consu"))
+            # v18: "storable" is no longer a type; goods are type "consu"
+            # (with is_storable for tracked stock), services stay excluded
+            lambda l: not l.display_type and l.product_id.type == "consu")
         if not po_lines:
             if picking:
                 raise UserError(_("Receipt %s has no purchase order products to return.",
@@ -415,7 +417,6 @@ class PurchaseReturnWizard(models.TransientModel):
                 active_model="stock.picking", active_id=receipt.id, active_ids=receipt.ids,
             ).create({
                 "picking_id": receipt.id,
-                "location_id": receipt.location_id.id,
                 "product_return_moves": [Command.create({
                     "product_id": move.product_id.id,
                     "move_id": move.id,
@@ -423,8 +424,8 @@ class PurchaseReturnWizard(models.TransientModel):
                     "to_refund": True,        # keeps PO qty_received in sync
                 }) for move, qty in allocations],
             })
-            new_picking_id, _type = return_wiz._create_returns()
-            picking = self.env["stock.picking"].browse(new_picking_id)
+            # v18: _create_returns() -> (id, type) became _create_return() -> picking
+            picking = return_wiz._create_return()
             self._prw_validate_return_picking(picking)
             returns |= picking
         return returns
@@ -438,11 +439,13 @@ class PurchaseReturnWizard(models.TransientModel):
                 "Cannot validate the return: the following products are no longer "
                 "available in the receipt location:\n%s",
                 "\n".join(short.product_id.mapped("display_name"))))
-        for move_line in picking.move_line_ids:
-            move_line.qty_done = move_line.reserved_uom_qty
+        # v17: reserved quantity lives in move.quantity; marking the moves as
+        # picked is what tells button_validate to process exactly that amount
+        # (replaces v16's move_line.qty_done = reserved_uom_qty).
+        picking.move_ids.picked = True
         res = picking.with_context(
             skip_backorder=True, picking_ids_not_to_backorder=picking.ids,
-            skip_immediate=True, skip_sms=True,
+            skip_sms=True,
         ).button_validate()
         if isinstance(res, dict) or picking.state != "done":
             raise UserError(_(

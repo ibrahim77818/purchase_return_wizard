@@ -35,5 +35,5 @@ class PurchaseOrder(models.Model):
         if self.return_log_count == 1:
             action.update(view_mode="form", res_id=self.return_log_ids.id)
         else:
-            action["view_mode"] = "tree,form"
+            action["view_mode"] = "list,form"
         return action

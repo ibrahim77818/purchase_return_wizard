@@ -4,7 +4,7 @@
         <field name="name">purchase.return.log.tree</field>
         <field name="model">purchase.return.log</field>
         <field name="arch" type="xml">
-            <tree create="0" edit="0" delete="0">
+            <list create="0" edit="0" delete="0">
                 <field name="name"/>
                 <field name="date"/>
                 <field name="purchase_id"/>
@@ -16,10 +16,10 @@
                        decoration-warning="routing == 'return_credit'"/>
                 <field name="refund_id"/>
                 <field name="refund_state" optional="show"/>
-                <field name="currency_id" invisible="1"/>
+                <field name="currency_id" column_invisible="True"/>
                 <field name="amount_credited" sum="Total Credited"/>
                 <field name="company_id" groups="base.group_multi_company" optional="show"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -36,7 +36,7 @@
                         <group>
                             <field name="purchase_id"/>
                             <field name="origin_picking_id"
-                                   attrs="{'invisible': [('origin_picking_id', '=', False)]}"/>
+                                   invisible="not origin_picking_id"/>
                             <field name="partner_id"/>
                             <field name="user_id" widget="many2one_avatar_user"/>
                             <field name="date"/>
@@ -44,7 +44,7 @@
                         <group>
                             <field name="routing"/>
                             <field name="refund_id"/>
-                            <field name="refund_state" attrs="{'invisible': [('refund_id', '=', False)]}"/>
+                            <field name="refund_state" invisible="not refund_id"/>
                             <field name="currency_id" invisible="1"/>
                             <field name="amount_credited"/>
                             <field name="company_id" groups="base.group_multi_company"/>
@@ -53,27 +53,27 @@
                     <notebook>
                         <page string="Returned Lines" name="lines">
                             <field name="line_ids">
-                                <tree>
+                                <list>
                                     <field name="product_id"/>
                                     <field name="scenario" widget="badge"/>
                                     <field name="qty_returned"/>
                                     <field name="product_uom_id" groups="uom.group_uom"/>
                                     <field name="qty_credited"/>
                                     <field name="price_unit"/>
-                                    <field name="currency_id" invisible="1"/>
+                                    <field name="currency_id" column_invisible="True"/>
                                     <field name="amount_credited" sum="Total"/>
-                                </tree>
+                                </list>
                             </field>
                         </page>
                         <page string="Return Transfers" name="pickings">
                             <field name="return_picking_ids">
-                                <tree>
+                                <list>
                                     <field name="name"/>
                                     <field name="location_id"/>
                                     <field name="location_dest_id"/>
                                     <field name="date_done"/>
                                     <field name="state" widget="badge"/>
-                                </tree>
+                                </list>
                             </field>
                         </page>
                         <page string="Reason" name="note">
@@ -109,7 +109,7 @@
     <record id="action_purchase_return_log" model="ir.actions.act_window">
         <field name="name">Purchase Returns</field>
         <field name="res_model">purchase.return.log</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="context">{'create': False}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">No purchase returns yet</p>
