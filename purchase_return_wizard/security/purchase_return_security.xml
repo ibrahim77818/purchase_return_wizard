@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- v19: groups are shown in the user form through a privilege
+         (res.groups.privilege) attached to an app category -->
+    <record id="res_groups_privilege_purchase_return" model="res.groups.privilege">
+        <field name="name">Purchase Returns</field>
+        <field name="sequence">9</field>
+        <field name="category_id" ref="base.module_category_supply_chain"/>
+    </record>
+
     <record id="group_purchase_return" model="res.groups">
-        <field name="name">Purchase: Process Returns &amp; Vendor Credits</field>
+        <field name="name">Process Returns &amp; Vendor Credits</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_purchase_return"/>
         <field name="implied_ids" eval="[(4, ref('purchase.group_purchase_user')), (4, ref('stock.group_stock_user'))]"/>
         <field name="comment">Can open the Return / Refund wizard, validate return transfers and create draft vendor credit notes.</field>
     </record>

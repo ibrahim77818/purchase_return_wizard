@@ -40,7 +40,7 @@ class PurchaseOrderLine(models.Model):
         result = {}
         today = fields.Date.context_today(self)
         for line in self:
-            uom = line.product_uom
+            uom = line.product_uom_id  # v19: purchase.order.line.product_uom -> product_uom_id
             rounding = uom.rounding
             billed = draft_bill = 0.0
             billed_subtotal = billed_qty_for_price = 0.0
@@ -77,7 +77,7 @@ class PurchaseOrderLine(models.Model):
                 sum(m._prw_get_returnable_qty() for m in scope_moves),
                 uom, rounding_method="HALF-UP")
             qty_in_receipt = sum(
-                m.product_uom._compute_quantity(m.quantity_done, uom, rounding_method="HALF-UP")
+                m.product_uom._compute_quantity(m.quantity, uom, rounding_method="HALF-UP")
                 for m in scope_moves) if picking else 0.0
 
             if billed_qty_for_price:
@@ -98,6 +98,6 @@ class PurchaseOrderLine(models.Model):
                     max(min(line.product_qty, received, physically_returnable), 0.0),
                     precision_rounding=rounding),
                 "price_unit": price_unit,
-                "tax_ids": last_taxes or line.taxes_id,
+                "tax_ids": last_taxes or line.tax_ids,  # v19: taxes_id -> tax_ids
             }
         return result

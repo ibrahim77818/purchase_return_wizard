@@ -9,18 +9,18 @@
                     <field name="state" widget="statusbar" statusbar_visible="select,review"/>
                 </header>
                 <div class="alert alert-warning mb-2" role="alert"
-                     attrs="{'invisible': [('has_draft_bills', '=', False)]}">
+                     invisible="not has_draft_bills">
                     This order has <b>draft</b> vendor bills. They are not changed by this wizard:
                     review them after the return to avoid billing returned goods.
                 </div>
                 <div class="alert alert-info mb-2" role="alert"
-                     attrs="{'invisible': [('picking_id', '=', False)]}">
+                     invisible="not picking_id">
                     Only products received in <field name="picking_id" readonly="1" class="fw-bold"
                     options="{'no_open': True}"/> are listed and returned. To return goods from
                     other receipts, use the button on the purchase order.
                 </div>
                 <div class="alert alert-warning mb-2" role="alert"
-                     attrs="{'invisible': [('unlinked_move_count', '=', 0)]}">
+                     invisible="unlinked_move_count == 0">
                     <field name="unlinked_move_count" readonly="1" class="fw-bold"/> product(s) on
                     this receipt are not linked to a purchase order line and are not listed.
                     Return them with the standard <b>Return</b> button on the receipt.
@@ -32,28 +32,28 @@
                         <field name="purchase_id" string="Purchase Order"/>
                         <field name="partner_id"/>
                     </group>
-                    <group attrs="{'invisible': [('state', '!=', 'select')]}">
+                    <group invisible="state != 'select'">
                         <field name="line_count" string="Total Lines"/>
                         <field name="visible_count"/>
                         <field name="selected_count"/>
                     </group>
-                    <group attrs="{'invisible': [('state', '!=', 'review')]}">
+                    <group invisible="state != 'review'">
                         <field name="review_routing"/>
                         <field name="review_return_qty"/>
                         <field name="review_credit_amount"
-                               attrs="{'invisible': [('review_routing', '!=', 'return_credit')]}"/>
+                               invisible="review_routing != 'return_credit'"/>
                     </group>
                 </group>
 
                 <!-- ===================== STEP 2: REVIEW ===================== -->
-                <div attrs="{'invisible': [('state', '!=', 'review')]}">
+                <div invisible="state != 'review'">
                     <div class="alert alert-info mb-2" role="alert">
-                        Confirming will <b>validate the return transfers immediately</b> (stock leaves your warehouse)<span attrs="{'invisible': [('review_routing', '!=', 'return_credit')]}"> and create a <b>draft vendor credit note</b> for the billed quantities</span>.
+                        Confirming will <b>validate the return transfers immediately</b> (stock leaves your warehouse)<span invisible="review_routing != 'return_credit'"> and create a <b>draft vendor credit note</b> for the billed quantities</span>.
                         Quantities are checked again against live data when you confirm.
                     </div>
                     <field name="selected_line_ids" nolabel="1">
-                        <tree create="0" delete="0" edit="0">
-                            <field name="currency_id" invisible="1"/>
+                        <list create="0" delete="0" edit="0">
+                            <field name="currency_id" column_invisible="True"/>
                             <field name="product_id"/>
                             <field name="default_code" optional="show"/>
                             <field name="scenario" widget="badge"
@@ -64,12 +64,12 @@
                             <field name="product_uom_id" groups="uom.group_uom"/>
                             <field name="credit_qty"/>
                             <field name="credit_amount" sum="Total"/>
-                        </tree>
+                        </list>
                     </field>
                 </div>
 
                 <!-- ===================== STEP 1: SELECT ===================== -->
-                <div attrs="{'invisible': [('state', '!=', 'select')]}">
+                <div invisible="state != 'select'">
                 <group string="Filter Lines">
                     <group>
                         <field name="filter_text" string="Search" placeholder="Product name, SKU or barcode…"/>
@@ -79,8 +79,8 @@
                     <group>
                         <field name="filter_qty_field" string="Quantity"/>
                         <label for="filter_qty_min" string="Between"
-                               attrs="{'invisible': [('filter_qty_field', '=', False)]}"/>
-                        <div class="o_row" attrs="{'invisible': [('filter_qty_field', '=', False)]}">
+                               invisible="not filter_qty_field"/>
+                        <div class="o_row" invisible="not filter_qty_field">
                             <field name="filter_qty_min" nolabel="1"/>
                             <span>to</span>
                             <field name="filter_qty_max" nolabel="1"/>
@@ -99,20 +99,20 @@
                 </div>
 
                 <field name="visible_line_ids" nolabel="1">
-                    <tree editable="bottom" create="0" delete="0"
+                    <list editable="bottom" create="0" delete="0"
                           decoration-muted="qty_returnable == 0"
                           decoration-info="action == 'return'"
                           decoration-danger="return_qty &gt; qty_returnable">
-                        <field name="sequence" invisible="1"/>
-                        <field name="currency_id" invisible="1"/>
+                        <field name="sequence" column_invisible="True"/>
+                        <field name="currency_id" column_invisible="True"/>
                         <field name="product_id" options="{'no_open': True}"/>
                         <field name="default_code" optional="hide"/>
                         <field name="name" optional="hide"/>
                         <field name="qty_ordered"/>
                         <field name="qty_received"/>
-                        <field name="picking_id" invisible="1"/>
+                        <field name="picking_id" column_invisible="True"/>
                         <field name="qty_in_receipt"
-                               attrs="{'column_invisible': [('parent.picking_id', '=', False)]}"/>
+                               column_invisible="not parent.picking_id"/>
                         <field name="qty_billed"/>
                         <field name="qty_returnable"/>
                         <field name="product_uom_id" groups="uom.group_uom" optional="show"/>
@@ -121,32 +121,32 @@
                                decoration-warning="scenario == 'partially_billed'"
                                decoration-danger="scenario == 'billed'"
                                decoration-muted="scenario == 'not_received'"/>
-                        <field name="action" widget="radio" options="{'horizontal': true}"
-                               attrs="{'readonly': [('qty_returnable', '&lt;=', 0)]}"/>
+                        <field name="action" widget="selection_badge" width="140px"
+                               readonly="qty_returnable &lt;= 0"/>
                         <field name="return_qty"
-                               attrs="{'readonly': [('qty_returnable', '&lt;=', 0)]}"/>
+                               readonly="qty_returnable &lt;= 0"/>
                         <field name="credit_qty" optional="hide"/>
                         <field name="credit_amount" optional="show"/>
-                    </tree>
+                    </list>
                 </field>
                 </div>
 
                 <group>
                     <field name="note" placeholder="Why are the goods returned? Stored on the log and the credit note."
-                           attrs="{'readonly': [('state', '=', 'review')]}"/>
+                           readonly="state == 'review'"/>
                 </group>
 
                 <footer>
                     <!-- No `confirm` attribute: confirmation is the server-side review step -->
                     <button name="action_review" type="object" string="Review Return"
                             class="btn-primary" data-hotkey="q"
-                            attrs="{'invisible': [('state', '!=', 'select')]}"/>
+                            invisible="state != 'select'"/>
                     <button name="action_confirm" type="object" string="Confirm Return"
                             class="btn-primary" data-hotkey="q"
-                            attrs="{'invisible': [('state', '!=', 'review')]}"/>
+                            invisible="state != 'review'"/>
                     <button name="action_back" type="object" string="Back"
                             class="btn-secondary" data-hotkey="b"
-                            attrs="{'invisible': [('state', '!=', 'review')]}"/>
+                            invisible="state != 'review'"/>
                     <button string="Cancel" special="cancel" class="btn-secondary" data-hotkey="z"/>
                 </footer>
             </form>

@@ -12,9 +12,10 @@ from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 class PurchaseReturnCommon(AccountTestInvoicingCommon):
 
     @classmethod
-    def setUpClass(cls, chart_template_ref=None):
-        super().setUpClass(chart_template_ref=chart_template_ref)
-        cls.env.user.write({"groups_id": [
+    def setUpClass(cls):
+        # v18: AccountTestInvoicingCommon.setUpClass() takes no chart_template_ref
+        super().setUpClass()
+        cls.env.user.write({"group_ids": [  # v19: groups_id -> group_ids
             Command.link(cls.env.ref("purchase_return_wizard.group_purchase_return").id),
             Command.link(cls.env.ref("purchase.group_purchase_manager").id),
             Command.link(cls.env.ref("stock.group_stock_manager").id),
@@ -26,7 +27,9 @@ class PurchaseReturnCommon(AccountTestInvoicingCommon):
             return cls.env["product.product"].create({
                 "name": name,
                 "default_code": code,
-                "detailed_type": "product",
+                # v18: detailed_type removed -> goods are "consu" + is_storable
+                "type": "consu",
+                "is_storable": True,
                 "purchase_method": "receive",
                 "supplier_taxes_id": [Command.set(taxes.ids if taxes else [])],
             })
@@ -42,7 +45,7 @@ class PurchaseReturnCommon(AccountTestInvoicingCommon):
             "order_line": [Command.create({
                 "product_id": p.id,
                 "product_qty": qty,
-                "product_uom": p.uom_po_id.id,
+                "product_uom_id": p.uom_id.id,  # v19: uom_po_id removed
                 "price_unit": price,
             }) for p, qty, price in lines],
         })
@@ -56,7 +59,9 @@ class PurchaseReturnCommon(AccountTestInvoicingCommon):
         picking = po.picking_ids.filtered(lambda p: p.state not in ("done", "cancel"))
         self.assertEqual(len(picking), 1)
         for move in picking.move_ids:
-            move.quantity_done = qty_by_product.get(move.product_id, 0.0)
+            # v17: quantity + picked replace quantity_done
+            move.quantity = qty_by_product.get(move.product_id, 0.0)
+            move.picked = True
         picking._action_done()  # creates a backorder for anything not received
         return picking
 
@@ -100,4 +105,4 @@ class PurchaseReturnCommon(AccountTestInvoicingCommon):
 
     def _returned_qty(self, pickings, product):
         return sum(pickings.move_ids.filtered(
-            lambda m: m.product_id == product).mapped("quantity_done"))
+            lambda m: m.product_id == product).mapped("quantity"))

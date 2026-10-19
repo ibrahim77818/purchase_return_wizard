@@ -129,7 +129,8 @@ class TestPickingReturn(PurchaseReturnCommon):
         receipt = po1.picking_ids
         po2.picking_ids.move_ids.write({"picking_id": receipt.id})
         for move in receipt.move_ids:
-            move.quantity_done = move.product_uom_qty
+            move.quantity = move.product_uom_qty
+            move.picked = True
         receipt._action_done()
         self.assertEqual(receipt.state, "done")
         with self.assertRaises(UserError):
@@ -143,8 +144,8 @@ class TestPickingReturn(PurchaseReturnCommon):
             "name": "Stock only", "login": "prw_stock_only",
             "company_id": self.env.company.id,
             "company_ids": [(6, 0, self.env.company.ids)],
-            "groups_id": [(6, 0, [self.env.ref("stock.group_stock_user").id])],
+            "group_ids": [(6, 0, [self.env.ref("stock.group_stock_user").id])],
         })
-        self.assertNotIn(group, user.groups_id)
+        self.assertNotIn(group, user.all_group_ids)
         with self.assertRaises(AccessError):
             receipt.with_user(user).action_open_purchase_return_wizard()

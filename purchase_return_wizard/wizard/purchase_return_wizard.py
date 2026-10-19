@@ -81,9 +81,9 @@ class PurchaseReturnWizard(models.TransientModel):
         [("qty_ordered", "Ordered"), ("qty_received", "Received"),
          ("qty_returnable", "Returnable"), ("qty_billed", "Billed")],
         string="Quantity Filter On")
-    filter_qty_min = fields.Float("Min Qty", digits="Product Unit of Measure")
+    filter_qty_min = fields.Float("Min Qty", digits="Product Unit")
     filter_qty_max = fields.Float(
-        "Max Qty", digits="Product Unit of Measure", help="0 = no upper bound")
+        "Max Qty", digits="Product Unit", help="0 = no upper bound")
     filter_scenario = fields.Selection(SCENARIOS, string="Status")
     filter_selected_only = fields.Boolean("Only Lines Marked for Return")
 
@@ -101,7 +101,7 @@ class PurchaseReturnWizard(models.TransientModel):
         compute="_compute_review", string="Documents to Create")
     review_return_qty = fields.Float(
         compute="_compute_review", string="Total Qty to Return",
-        digits="Product Unit of Measure")
+        digits="Product Unit")
     review_credit_amount = fields.Monetary(
         compute="_compute_review", string="Credit Note Amount (untaxed)",
         currency_field="currency_id")
@@ -158,7 +158,9 @@ class PurchaseReturnWizard(models.TransientModel):
         else:
             po_lines = order.order_line
         po_lines = po_lines.filtered(
-            lambda l: not l.display_type and l.product_id.type in ("product", "consu"))
+            # v18: "storable" is no longer a type; goods are type "consu"
+            # (with is_storable for tracked stock), services stay excluded
+            lambda l: not l.display_type and l.product_id.type == "consu")
         if not po_lines:
             if picking:
                 raise UserError(_("Receipt %s has no purchase order products to return.",
@@ -178,7 +180,7 @@ class PurchaseReturnWizard(models.TransientModel):
                 "sequence": pol.sequence,
                 "purchase_line_id": pol.id,
                 "name": pol.name,
-                "product_uom_id": pol.product_uom.id,
+                "product_uom_id": pol.product_uom_id.id,
                 "qty_ordered": m["qty_ordered"],
                 "qty_received": m["qty_received"],
                 "qty_in_receipt": m["qty_in_receipt"],
@@ -314,7 +316,7 @@ class PurchaseReturnWizard(models.TransientModel):
                     "%(product)s: requested %(req)s %(uom)s but only %(avail)s can be "
                     "returned now (ordered %(ord)s, received %(rec)s).",
                     product=pol.product_id.display_name, req=line.return_qty,
-                    uom=pol.product_uom.name, avail=m["qty_returnable"],
+                    uom=pol.product_uom_id.name, avail=m["qty_returnable"],
                     ord=m["qty_ordered"], rec=m["qty_received"]))
                 continue
             plan.append({
@@ -349,7 +351,8 @@ class PurchaseReturnWizard(models.TransientModel):
         old confirmation screen on the page.
         """
         def url(record):
-            return "/web#id=%s&model=%s&view_type=form" % (record.id, record._name)
+            # v19 native route (legacy /web# links are only kept for retro-compatibility)
+            return "/odoo/%s/%s" % (record._name, record.id)
 
         # display_notification fills each "%s" of `message` with one link, in order
         links = [{"label": log.name, "url": url(log)}]
@@ -394,7 +397,7 @@ class PurchaseReturnWizard(models.TransientModel):
             pol = item["purchase_line"]
             product_uom = pol.product_id.uom_id
             prec = product_uom.rounding
-            remaining = pol.product_uom._compute_quantity(
+            remaining = pol.product_uom_id._compute_quantity(
                 item["return_qty"], product_uom, rounding_method="HALF-UP")
             for move in pol._prw_get_receipt_moves(picking=self.picking_id):
                 if float_compare(remaining, 0.0, precision_rounding=prec) <= 0:
@@ -415,7 +418,6 @@ class PurchaseReturnWizard(models.TransientModel):
                 active_model="stock.picking", active_id=receipt.id, active_ids=receipt.ids,
             ).create({
                 "picking_id": receipt.id,
-                "location_id": receipt.location_id.id,
                 "product_return_moves": [Command.create({
                     "product_id": move.product_id.id,
                     "move_id": move.id,
@@ -423,8 +425,8 @@ class PurchaseReturnWizard(models.TransientModel):
                     "to_refund": True,        # keeps PO qty_received in sync
                 }) for move, qty in allocations],
             })
-            new_picking_id, _type = return_wiz._create_returns()
-            picking = self.env["stock.picking"].browse(new_picking_id)
+            # v18: _create_returns() -> (id, type) became _create_return() -> picking
+            picking = return_wiz._create_return()
             self._prw_validate_return_picking(picking)
             returns |= picking
         return returns
@@ -438,11 +440,13 @@ class PurchaseReturnWizard(models.TransientModel):
                 "Cannot validate the return: the following products are no longer "
                 "available in the receipt location:\n%s",
                 "\n".join(short.product_id.mapped("display_name"))))
-        for move_line in picking.move_line_ids:
-            move_line.qty_done = move_line.reserved_uom_qty
+        # v17: reserved quantity lives in move.quantity; marking the moves as
+        # picked is what tells button_validate to process exactly that amount
+        # (replaces v16's move_line.qty_done = reserved_uom_qty).
+        picking.move_ids.picked = True
         res = picking.with_context(
             skip_backorder=True, picking_ids_not_to_backorder=picking.ids,
-            skip_immediate=True, skip_sms=True,
+            skip_sms=True,
         ).button_validate()
         if isinstance(res, dict) or picking.state != "done":
             raise UserError(_(
@@ -490,7 +494,7 @@ class PurchaseReturnWizard(models.TransientModel):
             "line_ids": [Command.create({
                 "purchase_line_id": item["purchase_line"].id,
                 "product_id": item["purchase_line"].product_id.id,
-                "product_uom_id": item["purchase_line"].product_uom.id,
+                "product_uom_id": item["purchase_line"].product_uom_id.id,
                 "scenario": item["scenario"],
                 "qty_returned": item["return_qty"],
                 "qty_credited": item["credit_qty"],
@@ -530,17 +534,17 @@ class PurchaseReturnWizardLine(models.TransientModel):
     picking_id = fields.Many2one(related="wizard_id.picking_id")
 
     # snapshot at opening (re-validated against live data on confirm)
-    qty_ordered = fields.Float("Ordered", digits="Product Unit of Measure", readonly=True)
+    qty_ordered = fields.Float("Ordered", digits="Product Unit", readonly=True)
     qty_received = fields.Float(
-        "Received", digits="Product Unit of Measure", readonly=True,
+        "Received", digits="Product Unit", readonly=True,
         help="Net of returns already processed.")
     qty_in_receipt = fields.Float(
-        "In This Receipt", digits="Product Unit of Measure", readonly=True,
+        "In This Receipt", digits="Product Unit", readonly=True,
         help="Quantity done on the receipt the wizard was opened from.")
     qty_billed = fields.Float(
-        "Billed", digits="Product Unit of Measure", readonly=True,
+        "Billed", digits="Product Unit", readonly=True,
         help="Posted bills minus posted and draft credit notes.")
-    qty_returnable = fields.Float("Returnable", digits="Product Unit of Measure", readonly=True)
+    qty_returnable = fields.Float("Returnable", digits="Product Unit", readonly=True)
     billed_price_unit = fields.Float("Billed Unit Price", digits="Product Price", readonly=True)
     scenario = fields.Selection(
         SCENARIOS, string="Status", compute="_compute_scenario", store=True)
@@ -548,11 +552,11 @@ class PurchaseReturnWizardLine(models.TransientModel):
     # user input
     action = fields.Selection(
         [("keep", "Keep"), ("return", "Return")], default="keep", required=True)
-    return_qty = fields.Float("Return Qty", digits="Product Unit of Measure", default=0.0)
+    return_qty = fields.Float("Return Qty", digits="Product Unit", default=0.0)
 
     # preview
     credit_qty = fields.Float(
-        "Credit Qty", digits="Product Unit of Measure", compute="_compute_credit")
+        "Credit Qty", digits="Product Unit", compute="_compute_credit")
     credit_amount = fields.Monetary(
         "Credit Amount", compute="_compute_credit", currency_field="currency_id")
 
