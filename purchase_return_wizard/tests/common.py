@@ -56,7 +56,9 @@ class PurchaseReturnCommon(AccountTestInvoicingCommon):
         picking = po.picking_ids.filtered(lambda p: p.state not in ("done", "cancel"))
         self.assertEqual(len(picking), 1)
         for move in picking.move_ids:
-            move.quantity_done = qty_by_product.get(move.product_id, 0.0)
+            # v17: quantity + picked replace quantity_done
+            move.quantity = qty_by_product.get(move.product_id, 0.0)
+            move.picked = True
         picking._action_done()  # creates a backorder for anything not received
         return picking
 
@@ -100,4 +102,4 @@ class PurchaseReturnCommon(AccountTestInvoicingCommon):
 
     def _returned_qty(self, pickings, product):
         return sum(pickings.move_ids.filtered(
-            lambda m: m.product_id == product).mapped("quantity_done"))
+            lambda m: m.product_id == product).mapped("quantity"))

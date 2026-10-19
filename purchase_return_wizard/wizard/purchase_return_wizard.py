@@ -438,11 +438,13 @@ class PurchaseReturnWizard(models.TransientModel):
                 "Cannot validate the return: the following products are no longer "
                 "available in the receipt location:\n%s",
                 "\n".join(short.product_id.mapped("display_name"))))
-        for move_line in picking.move_line_ids:
-            move_line.qty_done = move_line.reserved_uom_qty
+        # v17: reserved quantity lives in move.quantity; marking the moves as
+        # picked is what tells button_validate to process exactly that amount
+        # (replaces v16's move_line.qty_done = reserved_uom_qty).
+        picking.move_ids.picked = True
         res = picking.with_context(
             skip_backorder=True, picking_ids_not_to_backorder=picking.ids,
-            skip_immediate=True, skip_sms=True,
+            skip_sms=True,
         ).button_validate()
         if isinstance(res, dict) or picking.state != "done":
             raise UserError(_(

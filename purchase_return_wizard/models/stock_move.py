@@ -24,11 +24,12 @@ class StockMove(models.Model):
         created from it (done or still pending)."""
         self.ensure_one()
         product_uom = self.product_id.uom_id
+        # v17: `quantity_done` was merged into `quantity` (done qty once state == done)
         done_qty = self.product_uom._compute_quantity(
-            self.quantity_done, product_uom, rounding_method="HALF-UP")
+            self.quantity, product_uom, rounding_method="HALF-UP")
         returned = 0.0
         for ret in self.returned_move_ids.filtered(lambda m: m.state != "cancel"):
-            qty = ret.quantity_done if ret.state == "done" else ret.product_uom_qty
+            qty = ret.quantity if ret.state == "done" else ret.product_uom_qty
             returned += ret.product_uom._compute_quantity(
                 qty, product_uom, rounding_method="HALF-UP")
         return max(done_qty - returned, 0.0)

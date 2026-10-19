@@ -16,7 +16,7 @@
                        decoration-warning="routing == 'return_credit'"/>
                 <field name="refund_id"/>
                 <field name="refund_state" optional="show"/>
-                <field name="currency_id" invisible="1"/>
+                <field name="currency_id" column_invisible="True"/>
                 <field name="amount_credited" sum="Total Credited"/>
                 <field name="company_id" groups="base.group_multi_company" optional="show"/>
             </tree>
@@ -36,7 +36,7 @@
                         <group>
                             <field name="purchase_id"/>
                             <field name="origin_picking_id"
-                                   attrs="{'invisible': [('origin_picking_id', '=', False)]}"/>
+                                   invisible="not origin_picking_id"/>
                             <field name="partner_id"/>
                             <field name="user_id" widget="many2one_avatar_user"/>
                             <field name="date"/>
@@ -44,7 +44,7 @@
                         <group>
                             <field name="routing"/>
                             <field name="refund_id"/>
-                            <field name="refund_state" attrs="{'invisible': [('refund_id', '=', False)]}"/>
+                            <field name="refund_state" invisible="not refund_id"/>
                             <field name="currency_id" invisible="1"/>
                             <field name="amount_credited"/>
                             <field name="company_id" groups="base.group_multi_company"/>
@@ -60,7 +60,7 @@
                                     <field name="product_uom_id" groups="uom.group_uom"/>
                                     <field name="qty_credited"/>
                                     <field name="price_unit"/>
-                                    <field name="currency_id" invisible="1"/>
+                                    <field name="currency_id" column_invisible="True"/>
                                     <field name="amount_credited" sum="Total"/>
                                 </tree>
                             </field>

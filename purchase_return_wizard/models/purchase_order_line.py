@@ -77,7 +77,7 @@ class PurchaseOrderLine(models.Model):
                 sum(m._prw_get_returnable_qty() for m in scope_moves),
                 uom, rounding_method="HALF-UP")
             qty_in_receipt = sum(
-                m.product_uom._compute_quantity(m.quantity_done, uom, rounding_method="HALF-UP")
+                m.product_uom._compute_quantity(m.quantity, uom, rounding_method="HALF-UP")
                 for m in scope_moves) if picking else 0.0
 
             if billed_qty_for_price:

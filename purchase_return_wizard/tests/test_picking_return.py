@@ -129,7 +129,8 @@ class TestPickingReturn(PurchaseReturnCommon):
         receipt = po1.picking_ids
         po2.picking_ids.move_ids.write({"picking_id": receipt.id})
         for move in receipt.move_ids:
-            move.quantity_done = move.product_uom_qty
+            move.quantity = move.product_uom_qty
+            move.picked = True
         receipt._action_done()
         self.assertEqual(receipt.state, "done")
         with self.assertRaises(UserError):
